@@ -9,9 +9,11 @@ import { ScoreBar } from "@/components/app/ScoreBar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
+import { GenerateDraftButton } from "@/components/app/GenerateDraftButton";
 
 export default function Watchlists() {
-  const { currentWorkspace } = useWorkspace();
+  const { currentWorkspace, role } = useWorkspace();
+  const canEdit = role === "admin" || role === "editor";
   const [tweets, setTweets] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [decision, setDecision] = useState<string>("all");
@@ -91,13 +93,16 @@ export default function Watchlists() {
                         <ScoreBar label="Risk" value={c.risk_score} variant="risk" />
                       </div>
                     )}
-                    {c?.matched_keywords?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {c.matched_keywords.map((k: string) => (
+                    <div className="flex items-end justify-between mt-2 gap-3">
+                      <div className="flex flex-wrap gap-1 min-w-0">
+                        {c?.matched_keywords?.length > 0 && c.matched_keywords.map((k: string) => (
                           <Badge key={k} variant="secondary" className="text-[10px] font-mono">#{k}</Badge>
                         ))}
                       </div>
-                    )}
+                      {canEdit && (
+                        <GenerateDraftButton tweetId={t.id} onGenerated={load} />
+                      )}
+                    </div>
                   </div>
                 );
               })}

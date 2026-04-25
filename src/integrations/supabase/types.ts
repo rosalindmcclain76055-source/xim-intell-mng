@@ -458,19 +458,28 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          automation_enabled: boolean
           created_at: string
+          default_persona_id: string | null
+          default_risk_ceiling: number
           id: string
           name: string
           owner_id: string
         }
         Insert: {
+          automation_enabled?: boolean
           created_at?: string
+          default_persona_id?: string | null
+          default_risk_ceiling?: number
           id?: string
           name: string
           owner_id: string
         }
         Update: {
+          automation_enabled?: boolean
           created_at?: string
+          default_persona_id?: string | null
+          default_risk_ceiling?: number
           id?: string
           name?: string
           owner_id?: string
