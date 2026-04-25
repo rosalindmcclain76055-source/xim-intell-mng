@@ -8,18 +8,19 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/app/LanguageSwitcher";
 
 export default function Auth() {
   const { signIn, signUp, session, loading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("signin");
 
-  // signin
   const [siEmail, setSiEmail] = useState("");
   const [siPass, setSiPass] = useState("");
 
-  // signup
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPass, setSuPass] = useState("");
@@ -34,53 +35,52 @@ export default function Auth() {
     const { error } = await signIn(siEmail, siPass);
     setBusy(false);
     if (error) toast.error(error.message);
-    else { toast.success("Welcome back"); navigate("/app"); }
+    else { toast.success(t("auth.welcomeBack")); navigate("/app"); }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (suPass.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (suPass.length < 6) { toast.error(t("auth.passwordTooShort")); return; }
     setBusy(true);
     const { error } = await signUp(suEmail, suPass, suName);
     setBusy(false);
     if (error) toast.error(error.message);
-    else { toast.success("Account created"); navigate("/app"); }
+    else { toast.success(t("auth.accountCreated")); navigate("/app"); }
   };
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Left: marketing panel */}
       <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-surface relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-gradient-primary opacity-20 blur-3xl" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-gradient-accent opacity-15 blur-3xl" />
 
-        <div className="relative">
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-lg bg-gradient-primary shadow-glow flex items-center justify-center font-display font-bold text-primary-foreground text-lg">
               X
             </div>
             <div>
-              <div className="font-display font-semibold text-lg leading-tight">XIM</div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Intelligence Manager</div>
+              <div className="font-display font-semibold text-lg leading-tight">{t("brand.name")}</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("brand.fullTagline")}</div>
             </div>
           </div>
+          <LanguageSwitcher />
         </div>
 
         <div className="relative space-y-6 max-w-md">
           <h2 className="font-display text-4xl font-semibold leading-tight">
-            AI-assisted X intelligence,<br />
-            <span className="text-gradient-primary">human-approved.</span>
+            {t("auth.heroTitle")}<br />
+            <span className="text-gradient-primary">{t("auth.heroTitleAccent")}</span>
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            Monitor selected accounts and topics. Score every tweet for relevance, source quality, and risk.
-            Generate drafts, route the important ones to review, and keep a complete audit trail.
+            {t("auth.heroDesc")}
           </p>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[
-              "Multi-account personas",
-              "Topic + risk scoring",
-              "Approval queue",
-              "Full audit log",
+              t("auth.features.personas"),
+              t("auth.features.scoring"),
+              t("auth.features.queue"),
+              t("auth.features.audit"),
             ].map((f) => (
               <div key={f} className="flex items-center gap-2 text-muted-foreground">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />{f}
@@ -90,38 +90,40 @@ export default function Auth() {
         </div>
 
         <div className="relative text-xs text-muted-foreground font-mono">
-          v0.1 · MVP · no autonomous reply
+          {t("auth.version")}
         </div>
       </div>
 
-      {/* Right: auth form */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <Card className="w-full max-w-md p-8 shadow-elev-md">
-          <div className="lg:hidden flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-md bg-gradient-primary flex items-center justify-center font-display font-bold text-primary-foreground">X</div>
-            <div className="font-display font-semibold">XIM</div>
+          <div className="lg:hidden flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-md bg-gradient-primary flex items-center justify-center font-display font-bold text-primary-foreground">X</div>
+              <div className="font-display font-semibold">{t("brand.name")}</div>
+            </div>
+            <LanguageSwitcher />
           </div>
-          <h1 className="font-display text-2xl font-semibold mb-1">Sign in to XIM</h1>
-          <p className="text-sm text-muted-foreground mb-6">Manage your X intelligence workspace.</p>
+          <h1 className="font-display text-2xl font-semibold mb-1">{t("auth.title")}</h1>
+          <p className="text-sm text-muted-foreground mb-6">{t("auth.subtitle")}</p>
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid grid-cols-2 mb-5">
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Create account</TabsTrigger>
+              <TabsTrigger value="signin">{t("common.signIn")}</TabsTrigger>
+              <TabsTrigger value="signup">{t("common.signUp")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-email">Email</Label>
-                  <Input id="si-email" type="email" required value={siEmail} onChange={(e) => setSiEmail(e.target.value)} />
+                  <Label htmlFor="si-email">{t("common.email")}</Label>
+                  <Input id="si-email" type="email" required value={siEmail} onChange={(e) => setSiEmail(e.target.value)} dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="si-pass">Password</Label>
-                  <Input id="si-pass" type="password" required value={siPass} onChange={(e) => setSiPass(e.target.value)} />
+                  <Label htmlFor="si-pass">{t("common.password")}</Label>
+                  <Input id="si-pass" type="password" required value={siPass} onChange={(e) => setSiPass(e.target.value)} dir="ltr" />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Sign in
+                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {t("common.signIn")}
                 </Button>
               </form>
             </TabsContent>
@@ -129,20 +131,20 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-name">Display name</Label>
+                  <Label htmlFor="su-name">{t("auth.displayName")}</Label>
                   <Input id="su-name" required value={suName} onChange={(e) => setSuName(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-email">Email</Label>
-                  <Input id="su-email" type="email" required value={suEmail} onChange={(e) => setSuEmail(e.target.value)} />
+                  <Label htmlFor="su-email">{t("common.email")}</Label>
+                  <Input id="su-email" type="email" required value={suEmail} onChange={(e) => setSuEmail(e.target.value)} dir="ltr" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="su-pass">Password</Label>
-                  <Input id="su-pass" type="password" required minLength={6} value={suPass} onChange={(e) => setSuPass(e.target.value)} />
-                  <p className="text-[11px] text-muted-foreground">Min 6 characters. A workspace is created automatically.</p>
+                  <Label htmlFor="su-pass">{t("common.password")}</Label>
+                  <Input id="su-pass" type="password" required minLength={6} value={suPass} onChange={(e) => setSuPass(e.target.value)} dir="ltr" />
+                  <p className="text-[11px] text-muted-foreground">{t("auth.passwordHint")}</p>
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Create account
+                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {t("common.signUp")}
                 </Button>
               </form>
             </TabsContent>

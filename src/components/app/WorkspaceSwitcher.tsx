@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export function WorkspaceSwitcher() {
   const { workspaces, currentWorkspace, switchWorkspace, createWorkspace } = useWorkspace();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -20,12 +22,12 @@ export function WorkspaceSwitcher() {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" role="combobox" className="w-full justify-between font-medium bg-sidebar-accent/50 border-sidebar-border">
-            <span className="truncate">{currentWorkspace?.name ?? "Select workspace"}</span>
+            <span className="truncate">{currentWorkspace?.name ?? t("workspace.select")}</span>
             <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-1" align="start">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">Workspaces</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1.5">{t("workspace.workspaces")}</div>
           {workspaces.map((w) => (
             <button
               key={w.id}
@@ -41,7 +43,7 @@ export function WorkspaceSwitcher() {
             onClick={() => { setOpen(false); setCreateOpen(true); }}
             className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
           >
-            <Plus className="h-3.5 w-3.5" /> New workspace
+            <Plus className="h-3.5 w-3.5" /> {t("workspace.newWorkspace")}
           </button>
         </PopoverContent>
       </Popover>
@@ -49,29 +51,29 @@ export function WorkspaceSwitcher() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display">Create workspace</DialogTitle>
+            <DialogTitle className="font-display">{t("workspace.createTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="ws-name">Name</Label>
-            <Input id="ws-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Crypto Research" />
+            <Label htmlFor="ws-name">{t("common.name")}</Label>
+            <Input id="ws-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("workspace.namePlaceholder")} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={async () => {
                 if (!name.trim()) return;
                 const ws = await createWorkspace(name.trim());
                 if (ws) {
-                  toast.success("Workspace created");
+                  toast.success(t("workspace.created"));
                   setName("");
                   setCreateOpen(false);
                   await switchWorkspace(ws.id);
                 } else {
-                  toast.error("Failed to create");
+                  toast.error(t("workspace.createFailed"));
                 }
               }}
             >
-              Create
+              {t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
