@@ -34,7 +34,8 @@ export default function Accounts() {
   };
 
   const toggle = async (id: string, field: "enabled" | "auto_reply_enabled", v: boolean) => {
-    await supabase.from("connected_accounts").update({ [field]: v }).eq("id", id);
+    const update = field === "enabled" ? { enabled: v } : { auto_reply_enabled: v };
+    await supabase.from("connected_accounts").update(update).eq("id", id);
     load();
   };
 
