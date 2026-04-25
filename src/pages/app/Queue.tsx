@@ -34,8 +34,10 @@ export default function Queue() {
 
   useEffect(() => { load(); }, [load]);
 
-  const setStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("drafts").update({ status, approved_by: status === "approved" ? (await supabase.auth.getUser()).data.user?.id : undefined }).eq("id", id);
+  const setStatus = async (id: string, status: "approved" | "rejected" | "pending" | "scheduled" | "published" | "failed") => {
+    const update: any = { status };
+    if (status === "approved") update.approved_by = (await supabase.auth.getUser()).data.user?.id;
+    const { error } = await supabase.from("drafts").update(update).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success(`Marked ${status}`); load(); }
   };
