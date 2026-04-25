@@ -3,9 +3,11 @@ import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 export default function Analytics() {
   const { currentWorkspace } = useWorkspace();
+  const { t } = useTranslation();
   const [stats, setStats] = useState({ tweets: 0, relevant: 0, drafts: 0, approved: 0, published: 0, ignored: 0 });
   const [topSources, setTopSources] = useState<{ handle: string; count: number }[]>([]);
   const [topKeywords, setTopKeywords] = useState<{ kw: string; count: number }[]>([]);
@@ -37,17 +39,17 @@ export default function Analytics() {
   }, [currentWorkspace]);
 
   const cards = [
-    { label: "Tweets ingested", value: stats.tweets },
-    { label: "Relevant", value: stats.relevant },
-    { label: "Ignored", value: stats.ignored },
-    { label: "Drafts created", value: stats.drafts },
-    { label: "Approved", value: stats.approved },
-    { label: "Published", value: stats.published },
+    { label: t("analytics.cards.tweets"), value: stats.tweets },
+    { label: t("analytics.cards.relevant"), value: stats.relevant },
+    { label: t("analytics.cards.ignored"), value: stats.ignored },
+    { label: t("analytics.cards.drafts"), value: stats.drafts },
+    { label: t("analytics.cards.approved"), value: stats.approved },
+    { label: t("analytics.cards.published"), value: stats.published },
   ];
 
   return (
     <>
-      <TopBar title="Analytics" subtitle="Workspace performance overview" />
+      <TopBar title={t("analytics.title")} subtitle={t("analytics.subtitle")} />
       <div className="p-6 space-y-6 animate-fade-in">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {cards.map((c) => (
@@ -60,14 +62,14 @@ export default function Analytics() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="font-display font-semibold mb-4">Top sources</h3>
+            <h3 className="font-display font-semibold mb-4">{t("analytics.topSources")}</h3>
             <div className="space-y-2">
-              {topSources.length === 0 ? <p className="text-sm text-muted-foreground">No data.</p> : topSources.map((s) => {
+              {topSources.length === 0 ? <p className="text-sm text-muted-foreground">{t("analytics.noData")}</p> : topSources.map((s) => {
                 const max = topSources[0].count;
                 return (
                   <div key={s.handle}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-mono">@{s.handle}</span>
+                      <span className="font-mono" dir="ltr">@{s.handle}</span>
                       <span className="font-mono text-muted-foreground tabular-nums">{s.count}</span>
                     </div>
                     <div className="h-1.5 rounded bg-secondary overflow-hidden"><div className="h-full bg-gradient-primary" style={{ width: `${(s.count / max) * 100}%` }} /></div>
@@ -78,9 +80,9 @@ export default function Analytics() {
           </Card>
 
           <Card className="p-5">
-            <h3 className="font-display font-semibold mb-4">Top topics</h3>
+            <h3 className="font-display font-semibold mb-4">{t("analytics.topTopics")}</h3>
             <div className="flex flex-wrap gap-2">
-              {topKeywords.length === 0 ? <p className="text-sm text-muted-foreground">No data.</p> : topKeywords.map((k) => (
+              {topKeywords.length === 0 ? <p className="text-sm text-muted-foreground">{t("analytics.noData")}</p> : topKeywords.map((k) => (
                 <span key={k.kw} className="px-2.5 py-1 rounded-md border border-border bg-surface-2 text-xs font-mono">
                   #{k.kw} <span className="text-muted-foreground">·{k.count}</span>
                 </span>

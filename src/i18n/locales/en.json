@@ -1,0 +1,268 @@
+{
+  "common": {
+    "all": "All",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "scheduled": "Scheduled",
+    "published": "Published",
+    "failed": "Failed",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "add": "Add",
+    "edit": "Edit",
+    "remove": "Remove",
+    "delete": "Delete",
+    "approve": "Approve",
+    "reject": "Reject",
+    "loading": "Loading…",
+    "search": "Search",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "role": "Role",
+    "workspace": "Workspace",
+    "language": "Language",
+    "english": "English",
+    "persian": "Persian",
+    "theme": "Theme",
+    "toggle": "Toggle",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "getStarted": "Get started",
+    "viewQueue": "View queue",
+    "viewAll": "View all",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sources": "Sources",
+    "watchlists": "Watchlists",
+    "queue": "Approval Queue",
+    "drafts": "Drafts",
+    "published": "Published",
+    "personas": "Personas",
+    "accounts": "Accounts",
+    "analytics": "Analytics",
+    "audit": "Audit Logs",
+    "settings": "Settings"
+  },
+  "brand": {
+    "name": "XIM",
+    "tagline": "Intelligence Mgr",
+    "fullTagline": "Intelligence Manager",
+    "footer": "Human-approved automation"
+  },
+  "topbar": {
+    "seedDemo": "Seed demo",
+    "seeding": "Seeding…",
+    "seedSuccess": "Sample data loaded",
+    "seedFailed": "Seed failed"
+  },
+  "auth": {
+    "title": "Sign in to XIM",
+    "subtitle": "Manage your X intelligence workspace.",
+    "displayName": "Display name",
+    "passwordHint": "Min 6 characters. A workspace is created automatically.",
+    "welcomeBack": "Welcome back",
+    "accountCreated": "Account created",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "signedOut": "Signed out",
+    "heroTitle": "AI-assisted X intelligence,",
+    "heroTitleAccent": "human-approved.",
+    "heroDesc": "Monitor selected accounts and topics. Score every tweet for relevance, source quality, and risk. Generate drafts, route the important ones to review, and keep a complete audit trail.",
+    "version": "v0.1 · MVP · no autonomous reply",
+    "features": {
+      "personas": "Multi-account personas",
+      "scoring": "Topic + risk scoring",
+      "queue": "Approval queue",
+      "audit": "Full audit log"
+    }
+  },
+  "landing": {
+    "badge": "MVP · human-approved automation",
+    "heroDesc": "Monitor accounts, keywords, and concepts. Score every tweet for relevance, source quality, and risk. Generate drafts, route the important ones to review, never spam.",
+    "startFree": "Start free",
+    "footer": "© XIM · v0.1",
+    "builtOn": "Built on Lovable Cloud",
+    "features": {
+      "sources": { "title": "Source watchlists", "desc": "Track curated accounts, keywords, concepts, and X-style queries with per-source priority." },
+      "classifier": { "title": "Hybrid classifier", "desc": "Topic + source + actionability − risk. Only high-signal tweets become drafts." },
+      "personas": { "title": "Persona drafting", "desc": "Each connected account writes in its own tone, expertise, and reply style." },
+      "queue": { "title": "Approval queue", "desc": "Approve, edit, schedule, or reject. Nothing gets posted without intent." },
+      "safety": { "title": "Safety guardrails", "desc": "No mass replies. No unsolicited mentions. Auto-reply is opt-in only." },
+      "audit": { "title": "Full audit log", "desc": "Every ingestion, classification, draft, and publish is traceable." }
+    }
+  },
+  "dashboard": {
+    "emptyTitle": "Empty workspace",
+    "emptyDesc": "Click {{seed}} in the top bar to load realistic sample tweets, classifications, and drafts.",
+    "ingestedToday": "Ingested today",
+    "relevantTweets": "Relevant tweets",
+    "pendingDrafts": "Pending drafts",
+    "publishedCount": "Published",
+    "recentTitle": "Recent classifications",
+    "recentDesc": "Latest tweets scored by the engine",
+    "auditTitle": "Audit feed",
+    "noClassifications": "No classifications yet.",
+    "noEvents": "No events yet."
+  },
+  "decisions": {
+    "ignore": "Ignore",
+    "review": "Review",
+    "draft_reply": "Draft reply",
+    "draft_quote": "Draft quote",
+    "draft_post": "Draft post"
+  },
+  "scores": {
+    "topic": "Topic",
+    "source": "Source",
+    "action": "Action",
+    "risk": "Risk"
+  },
+  "sources": {
+    "title": "Sources",
+    "subtitle": "Watchlists of accounts, keywords, concepts, and queries",
+    "addSource": "Add source",
+    "addTitle": "Add watch source",
+    "type": "Type",
+    "value": "Value",
+    "labelOptional": "Label (optional)",
+    "priority": "Priority",
+    "friendlyName": "Friendly name",
+    "added": "Source added",
+    "removed": "Removed",
+    "empty": "No sources yet. Add accounts, keywords, or queries to monitor.",
+    "types": {
+      "account": "Account",
+      "accountFull": "Account (handle)",
+      "keyword": "Keyword",
+      "concept": "Concept",
+      "query": "Query",
+      "queryFull": "X-style query"
+    }
+  },
+  "watchlists": {
+    "title": "Tweet Stream",
+    "subtitle": "{{count}} ingested · classifier scores per tweet",
+    "searchPlaceholder": "Search text or handle…",
+    "tabs": {
+      "replies": "Replies",
+      "quotes": "Quotes",
+      "posts": "Posts",
+      "review": "Review",
+      "ignored": "Ignored"
+    },
+    "noMatch": "No tweets match."
+  },
+  "queue": {
+    "title": "Approval Queue",
+    "subtitle": "Drafts awaiting review · nothing posts without you",
+    "empty": "Queue is empty.",
+    "re": "Re:",
+    "markedToast": "Marked {{status}}",
+    "updated": "Updated"
+  },
+  "drafts": {
+    "title": "Drafts",
+    "subtitle": "All AI-generated drafts across statuses",
+    "empty": "No drafts.",
+    "re": "Re:"
+  },
+  "published": {
+    "title": "Published",
+    "subtitle": "Posts successfully published",
+    "empty": "Nothing published yet."
+  },
+  "personas": {
+    "title": "Personas",
+    "subtitle": "Voice profiles for each connected account",
+    "newPersona": "New persona",
+    "createTitle": "Create persona",
+    "created": "Persona created",
+    "empty": "No personas yet.",
+    "fields": {
+      "name": "Name",
+      "tone": "Tone",
+      "expertise_domain": "Expertise domain",
+      "reply_style": "Reply style",
+      "risk_tolerance": "Risk tolerance",
+      "description": "Description"
+    },
+    "labels": {
+      "tone": "Tone",
+      "expertise": "Expertise",
+      "style": "Style",
+      "risk": "Risk"
+    }
+  },
+  "accounts": {
+    "title": "Connected Accounts",
+    "subtitle": "X accounts being managed",
+    "addAccount": "Add account",
+    "addTitle": "Add account",
+    "handle": "Handle",
+    "displayName": "Display name",
+    "bio": "Bio",
+    "added": "Account added",
+    "empty": "No accounts.",
+    "enabled": "Enabled",
+    "autoReply": "Auto-reply"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Workspace performance overview",
+    "topSources": "Top sources",
+    "topTopics": "Top topics",
+    "noData": "No data.",
+    "cards": {
+      "tweets": "Tweets ingested",
+      "relevant": "Relevant",
+      "ignored": "Ignored",
+      "drafts": "Drafts created",
+      "approved": "Approved",
+      "published": "Published"
+    }
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "Every event in this workspace",
+    "empty": "No events."
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "appearance": "Appearance",
+    "language": "Language",
+    "safetyTitle": "Safety policy",
+    "safetyDesc": "XIM never auto-publishes replies or mentions. All interactive drafts require human approval. Auto-reply per account is opt-in and disabled by default."
+  },
+  "draftBtn": {
+    "draft": "Draft",
+    "reply": "Reply",
+    "quote": "Quote",
+    "standalonePost": "Standalone post",
+    "createdToast": "Draft created — review it in the Queue.",
+    "failed": "Failed to generate draft"
+  },
+  "classifyBtn": {
+    "classify": "Classify",
+    "classified": "Classified → {{decision}}",
+    "failed": "Failed to classify"
+  },
+  "workspace": {
+    "select": "Select workspace",
+    "workspaces": "Workspaces",
+    "newWorkspace": "New workspace",
+    "createTitle": "Create workspace",
+    "namePlaceholder": "e.g. Crypto Research",
+    "created": "Workspace created",
+    "createFailed": "Failed to create"
+  }
+}

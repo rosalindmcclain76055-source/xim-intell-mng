@@ -12,17 +12,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AtSign, Hash, Brain, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
-const TYPE_META: Record<string, { icon: any; label: string; color: string }> = {
-  account: { icon: AtSign, label: "Account", color: "text-primary" },
-  keyword: { icon: Hash, label: "Keyword", color: "text-accent" },
-  concept: { icon: Brain, label: "Concept", color: "text-warning" },
-  query: { icon: Search, label: "Query", color: "text-success" },
+const TYPE_META: Record<string, { icon: any; key: string; color: string }> = {
+  account: { icon: AtSign, key: "account", color: "text-primary" },
+  keyword: { icon: Hash, key: "keyword", color: "text-accent" },
+  concept: { icon: Brain, key: "concept", color: "text-warning" },
+  query: { icon: Search, key: "query", color: "text-success" },
 };
 
 export default function Sources() {
   const { currentWorkspace, role } = useWorkspace();
   const canEdit = role === "admin" || role === "editor";
+  const { t } = useTranslation();
   const [rows, setRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"account" | "keyword" | "concept" | "query">("account");
@@ -49,7 +51,7 @@ export default function Sources() {
       enabled: true,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Source added"); setOpen(false); setValue(""); setLabel(""); load(); }
+    else { toast.success(t("sources.added")); setOpen(false); setValue(""); setLabel(""); load(); }
   };
 
   const toggle = async (id: string, enabled: boolean) => {
@@ -59,51 +61,51 @@ export default function Sources() {
 
   const remove = async (id: string) => {
     await supabase.from("watch_sources").delete().eq("id", id);
-    toast.success("Removed");
+    toast.success(t("sources.removed"));
     load();
   };
 
   return (
     <>
       <TopBar
-        title="Sources"
-        subtitle="Watchlists of accounts, keywords, concepts, and queries"
+        title={t("sources.title")}
+        subtitle={t("sources.subtitle")}
         actions={canEdit && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add source</Button>
+              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> {t("sources.addSource")}</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle className="font-display">Add watch source</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="font-display">{t("sources.addTitle")}</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Type</Label>
+                  <Label>{t("sources.type")}</Label>
                   <Select value={type} onValueChange={(v) => setType(v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="account">Account (handle)</SelectItem>
-                      <SelectItem value="keyword">Keyword</SelectItem>
-                      <SelectItem value="concept">Concept</SelectItem>
-                      <SelectItem value="query">X-style query</SelectItem>
+                      <SelectItem value="account">{t("sources.types.accountFull")}</SelectItem>
+                      <SelectItem value="keyword">{t("sources.types.keyword")}</SelectItem>
+                      <SelectItem value="concept">{t("sources.types.concept")}</SelectItem>
+                      <SelectItem value="query">{t("sources.types.queryFull")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Value</Label>
+                  <Label>{t("sources.value")}</Label>
                   <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === "account" ? "VitalikButerin" : type === "query" ? "from:OpenAI gpt -filter:replies" : "stablecoin depeg"} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Label (optional)</Label>
-                  <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Friendly name" />
+                  <Label>{t("sources.labelOptional")}</Label>
+                  <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("sources.friendlyName")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Priority: <span className="font-mono">{priority}</span></Label>
+                  <Label>{t("sources.priority")}: <span className="font-mono">{priority}</span></Label>
                   <input type="range" min={0} max={100} value={priority} onChange={(e) => setPriority(Number(e.target.value))} className="w-full" />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={add}>Add</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+                <Button onClick={add}>{t("common.add")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -113,7 +115,7 @@ export default function Sources() {
         <Card className="p-0 overflow-hidden">
           {rows.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-sm text-muted-foreground">No sources yet. Add accounts, keywords, or queries to monitor.</p>
+              <p className="text-sm text-muted-foreground">{t("sources.empty")}</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -124,12 +126,12 @@ export default function Sources() {
                     <meta.icon className={`w-4 h-4 ${meta.color} shrink-0`} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm truncate">{r.source_value}</span>
+                        <span className="font-mono text-sm truncate" dir="ltr">{r.source_value}</span>
                         {r.label && <span className="text-xs text-muted-foreground truncate">· {r.label}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">{meta.label}</Badge>
-                        <span className="text-[11px] text-muted-foreground font-mono">priority {r.priority}</span>
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">{t(`sources.types.${meta.key}`)}</Badge>
+                        <span className="text-[11px] text-muted-foreground font-mono">{t("sources.priority").toLowerCase()} {r.priority}</span>
                       </div>
                     </div>
                     <Switch checked={r.enabled} onCheckedChange={(v) => toggle(r.id, v)} disabled={!canEdit} />

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface ClassifyButtonProps {
   tweetId: string;
@@ -12,6 +13,7 @@ interface ClassifyButtonProps {
 
 export function ClassifyButton({ tweetId, onClassified, size = "sm" }: ClassifyButtonProps) {
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const run = async () => {
     setLoading(true);
@@ -31,11 +33,12 @@ export function ClassifyButton({ tweetId, onClassified, size = "sm" }: ClassifyB
       }
       const decision = data?.classification?.final_decision;
       if (decision) {
-        toast.success(`Classified → ${decision.replace("_", " ")}`);
+        const decisionLabel = t(`decisions.${decision}`, { defaultValue: decision.replace("_", " ") });
+        toast.success(t("classifyBtn.classified", { decision: decisionLabel }));
         onClassified?.(decision);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to classify");
+      toast.error(e?.message ?? t("classifyBtn.failed"));
     } finally {
       setLoading(false);
     }
@@ -44,7 +47,7 @@ export function ClassifyButton({ tweetId, onClassified, size = "sm" }: ClassifyB
   return (
     <Button variant="outline" size={size} disabled={loading} onClick={run} className="h-7">
       {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Brain className="w-3.5 h-3.5 mr-1" />}
-      Classify
+      {t("classifyBtn.classify")}
     </Button>
   );
 }

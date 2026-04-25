@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { seedWorkspace } from "@/lib/seed";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface TopBarProps {
   title: string;
@@ -25,6 +27,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const { currentWorkspace, role, refresh } = useWorkspace();
   const navigate = useNavigate();
   const [seeding, setSeeding] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
@@ -51,9 +54,9 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               try {
                 await seedWorkspace(currentWorkspace.id);
                 await refresh();
-                toast.success("Sample data loaded");
+                toast.success(t("topbar.seedSuccess"));
               } catch (e: any) {
-                toast.error(e?.message ?? "Seed failed");
+                toast.error(e?.message ?? t("topbar.seedFailed"));
               } finally {
                 setSeeding(false);
               }
@@ -61,9 +64,10 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             className="hidden sm:inline-flex gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {seeding ? "Seeding…" : "Seed demo"}
+            {seeding ? t("topbar.seeding") : t("topbar.seedDemo")}
           </Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+          <LanguageSwitcher />
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("common.theme")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           <DropdownMenu>
@@ -77,16 +81,16 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
                 {user?.email}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/app/settings")}>Settings</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/app/settings")}>{t("common.settings")}</DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   await signOut();
-                  toast.success("Signed out");
+                  toast.success(t("auth.signedOut"));
                   navigate("/auth");
                 }}
                 className="text-destructive focus:text-destructive"
               >
-                <LogOut className="w-4 h-4 mr-2" /> Sign out
+                <LogOut className="w-4 h-4 mr-2" /> {t("common.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
