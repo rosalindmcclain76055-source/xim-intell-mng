@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { GenerateDraftButton } from "@/components/app/GenerateDraftButton";
+import { ClassifyButton } from "@/components/app/ClassifyButton";
 
 export default function Watchlists() {
   const { currentWorkspace, role } = useWorkspace();
@@ -93,14 +94,20 @@ export default function Watchlists() {
                         <ScoreBar label="Risk" value={c.risk_score} variant="risk" />
                       </div>
                     )}
-                    <div className="flex items-end justify-between mt-2 gap-3">
+                    <div className="flex items-end justify-between mt-2 gap-3 flex-wrap">
                       <div className="flex flex-wrap gap-1 min-w-0">
                         {c?.matched_keywords?.length > 0 && c.matched_keywords.map((k: string) => (
                           <Badge key={k} variant="secondary" className="text-[10px] font-mono">#{k}</Badge>
                         ))}
+                        {c?.reasoning && (
+                          <span className="text-[11px] text-muted-foreground italic">{c.reasoning}</span>
+                        )}
                       </div>
                       {canEdit && (
-                        <GenerateDraftButton tweetId={t.id} onGenerated={load} />
+                        <div className="flex items-center gap-2">
+                          <ClassifyButton tweetId={t.id} onClassified={load} />
+                          <GenerateDraftButton tweetId={t.id} onGenerated={load} />
+                        </div>
                       )}
                     </div>
                   </div>
