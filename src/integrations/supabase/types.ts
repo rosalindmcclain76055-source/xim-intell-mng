@@ -63,6 +63,7 @@ export type Database = {
           actionability_score: number
           created_at: string
           final_decision: Database["public"]["Enums"]["classification_decision"]
+          final_score: number
           id: string
           matched_keywords: string[] | null
           model_version: string | null
@@ -77,6 +78,7 @@ export type Database = {
           actionability_score?: number
           created_at?: string
           final_decision?: Database["public"]["Enums"]["classification_decision"]
+          final_score?: number
           id?: string
           matched_keywords?: string[] | null
           model_version?: string | null
@@ -91,6 +93,7 @@ export type Database = {
           actionability_score?: number
           created_at?: string
           final_decision?: Database["public"]["Enums"]["classification_decision"]
+          final_score?: number
           id?: string
           matched_keywords?: string[] | null
           model_version?: string | null
@@ -514,9 +517,7 @@ export type Database = {
       classification_decision:
         | "ignore"
         | "review"
-        | "draft_reply"
-        | "draft_quote"
-        | "draft_post"
+        | "draft"
       draft_status:
         | "pending"
         | "approved"
@@ -657,9 +658,7 @@ export const Constants = {
       classification_decision: [
         "ignore",
         "review",
-        "draft_reply",
-        "draft_quote",
-        "draft_post",
+        "draft",
       ],
       draft_status: [
         "pending",
