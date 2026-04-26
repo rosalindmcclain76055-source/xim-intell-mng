@@ -30,25 +30,25 @@ function bad(status: number, message: string) {
 function clamp(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v)) return 0;
-  return Math.max(0, Math.min(100, Math.round(v)));
+  return Math.max(0, Math.min(100, Number(v.toFixed(2))));
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return bad(405, "Method not allowed");
+  if (req.method !== "POST") return bad(400, "Method not allowed");
 
   try {
-    if (!LOVABLE_API_KEY) return bad(500, "LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) return bad(400, "LOVABLE_API_KEY is not configured");
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return bad(401, "Missing Authorization header");
+    if (!authHeader) return bad(400, "Missing Authorization header");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData.user) return bad(401, "Invalid session");
+    if (userErr || !userData.user) return bad(400, "Invalid session");
     const userId = userData.user.id;
 
     let body: any;
@@ -62,8 +62,11 @@ Deno.serve(async (req) => {
       .select("id, workspace_id, text, source_handle, source_display_name, hashtags")
       .eq("id", tweetId)
       .maybeSingle();
-    if (tweetErr) return bad(500, tweetErr.message);
-    if (!tweet) return bad(404, "Tweet not found or not accessible");
+    if (tweetErr) {
+      console.error("Failed to load tweet", tweetErr);
+      return bad(400, tweetErr.message);
+    }
+    if (!tweet) return bad(400, "Tweet not found or not accessible");
     const workspaceId = tweet.workspace_id;
 
     // ---- role check ----
@@ -71,8 +74,11 @@ Deno.serve(async (req) => {
       _workspace_id: workspaceId,
       _user_id: userId,
     });
-    if (roleErr) return bad(500, roleErr.message);
-    if (!canEdit) return bad(403, "You need editor or admin role");
+    if (roleErr) {
+      console.error("Role check failed", roleErr);
+      return bad(400, roleErr.message);
+    }
+    if (!canEdit) return bad(400, "You need editor or admin role");
 
     // ---- gather workspace context: watch sources + persona signal ----
     const { data: sources } = await supabase
@@ -147,10 +153,10 @@ Score it and decide.`;
         parameters: {
           type: "object",
           properties: {
-            topic_score: { type: "integer", minimum: 0, maximum: 100 },
-            source_score: { type: "integer", minimum: 0, maximum: 100 },
-            actionability_score: { type: "integer", minimum: 0, maximum: 100 },
-            risk_score: { type: "integer", minimum: 0, maximum: 100 },
+            topic_score: { type: "number", minimum: 0, maximum: 100 },
+            source_score: { type: "number", minimum: 0, maximum: 100 },
+            actionability_score: { type: "number", minimum: 0, maximum: 100 },
+            risk_score: { type: "number", minimum: 0, maximum: 100 },
             final_decision: { type: "string", enum: ["ignore", "review", "draft"] },
             reasoning: { type: "string", description: "1-2 sentence justification, max 240 chars." },
             matched_keywords: { type: "array", items: { type: "string" }, description: "Keywords from the watched list that appear in or relate to the tweet." },
@@ -174,19 +180,20 @@ Score it and decide.`;
         tool_choice: { type: "function", function: { name: "classify_tweet" } },
       }),
     });
+    if (!workspaceId) return bad(400, "workspace_id is required");
 
-    if (aiRes.status === 429) return bad(429, "AI rate limit hit. Try again shortly.");
-    if (aiRes.status === 402) return bad(402, "AI credits exhausted. Add funds in workspace settings.");
+    if (aiRes.status === 429) return bad(400, "AI rate limit hit. Try again shortly.");
+    if (aiRes.status === 402) return bad(400, "AI credits exhausted. Add funds in workspace settings.");
     if (!aiRes.ok) {
       console.error("AI gateway error", aiRes.status, await aiRes.text());
-      return bad(502, "AI gateway error");
+      return bad(400, "AI gateway error");
     }
     const aiJson = await aiRes.json();
     const call = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call?.function?.arguments) return bad(502, "AI did not return classification");
+    if (!call?.function?.arguments) return bad(400, "AI did not return classification");
 
     let parsed: any;
-    try { parsed = JSON.parse(call.function.arguments); } catch { return bad(502, "AI returned invalid JSON"); }
+    try { parsed = JSON.parse(call.function.arguments); } catch { return bad(400, "AI returned invalid JSON"); }
 
     const row = {
       tweet_id: tweetId,
@@ -198,18 +205,24 @@ Score it and decide.`;
       final_decision: (["ignore", "review", "draft"].includes(parsed.final_decision)
         ? parsed.final_decision
         : "review") as Decision,
-      final_score: Math.max(0, Math.min(100, Math.round(
-        0.45 * clamp(parsed.topic_score) +
-        0.25 * clamp(parsed.source_score) +
-        0.3 * clamp(parsed.actionability_score) -
-        0.5 * clamp(parsed.risk_score)
-      ))),
+      final_score: Number(
+        Math.max(0, Math.min(100,
+          0.45 * clamp(parsed.topic_score) +
+          0.25 * clamp(parsed.source_score) +
+          0.3 * clamp(parsed.actionability_score) -
+          0.5 * clamp(parsed.risk_score)
+        )).toFixed(2)
+      ),
       reasoning: typeof parsed.reasoning === "string" ? parsed.reasoning.slice(0, 500) : null,
       matched_keywords: Array.isArray(parsed.matched_keywords)
         ? parsed.matched_keywords.filter((k: any) => typeof k === "string").slice(0, 20)
         : [],
       model_version: MODEL_VERSION,
     };
+    if (!row.tweet_id || !row.workspace_id) return bad(400, "tweet_id and workspace_id are required");
+    if (!Number.isFinite(row.final_score)) return bad(400, "final_score is required");
+    if (!row.final_decision) return bad(400, "final_decision is required");
+    console.log("INSERT PAYLOAD:", row);
 
     // upsert on tweet_id
     const { data: saved, error: upsertErr } = await supabase
@@ -217,7 +230,10 @@ Score it and decide.`;
       .upsert(row, { onConflict: "tweet_id" })
       .select("topic_score, source_score, actionability_score, risk_score, final_score, final_decision, reasoning, matched_keywords")
       .single();
-    if (upsertErr) return bad(500, upsertErr.message);
+    if (upsertErr) {
+      console.error("Classification upsert failed", { upsertErr, row });
+      return bad(400, upsertErr.message);
+    }
 
     await supabase.from("audit_logs").insert({
       workspace_id: workspaceId,
@@ -229,12 +245,20 @@ Score it and decide.`;
       metadata: { model: MODEL_VERSION, scores: { topic: row.topic_score, source: row.source_score, actionability: row.actionability_score, risk: row.risk_score, final: row.final_score } },
     });
 
-    return new Response(JSON.stringify({ classification: saved }), {
+    return new Response(JSON.stringify({
+      classification: saved,
+      payload: {
+        tweet_id: row.tweet_id,
+        workspace_id: row.workspace_id,
+        final_score: row.final_score,
+        final_decision: row.final_decision,
+      },
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("classify-tweet error", e);
-    return bad(500, e instanceof Error ? e.message : "Unknown error");
+    console.error("EDGE ERROR:", e);
+    return bad(400, e instanceof Error ? e.message : "Unknown error");
   }
 });

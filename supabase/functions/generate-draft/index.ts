@@ -26,13 +26,13 @@ function bad(status: number, message: string, extra: Record<string, unknown> = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return bad(405, "Method not allowed");
+  if (req.method !== "POST") return bad(400, "Method not allowed");
 
   try {
-    if (!LOVABLE_API_KEY) return bad(500, "LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) return bad(400, "LOVABLE_API_KEY is not configured");
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return bad(401, "Missing Authorization header");
+    if (!authHeader) return bad(400, "Missing Authorization header");
 
     // Per-request client carries the user's JWT, so RLS applies.
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     });
 
     const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData.user) return bad(401, "Invalid session");
+    if (userErr || !userData.user) return bad(400, "Invalid session");
     const userId = userData.user.id;
 
     // ---- validate input ----
@@ -66,8 +66,11 @@ Deno.serve(async (req) => {
       .select("id, workspace_id, text, source_handle, source_display_name, hashtags")
       .eq("id", tweetId)
       .maybeSingle();
-    if (tweetErr) return bad(500, tweetErr.message);
-    if (!tweet) return bad(404, "Tweet not found or not accessible");
+    if (tweetErr) {
+      console.error("Failed to load tweet", tweetErr);
+      return bad(400, tweetErr.message);
+    }
+    if (!tweet) return bad(400, "Tweet not found or not accessible");
 
     const workspaceId = tweet.workspace_id;
 
@@ -76,8 +79,11 @@ Deno.serve(async (req) => {
       _workspace_id: workspaceId,
       _user_id: userId,
     });
-    if (roleErr) return bad(500, roleErr.message);
-    if (!canEdit) return bad(403, "You need editor or admin role in this workspace");
+    if (roleErr) {
+      console.error("Role check failed", roleErr);
+      return bad(400, roleErr.message);
+    }
+    if (!canEdit) return bad(400, "You need editor or admin role in this workspace");
 
     // ---- resolve persona: explicit > account default > workspace default ----
     let personaId: string | null = personaIdOverride;
@@ -168,12 +174,12 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiRes.status === 429) return bad(429, "AI rate limit hit. Try again shortly.");
-    if (aiRes.status === 402) return bad(402, "AI credits exhausted. Add funds in workspace settings.");
+    if (aiRes.status === 429) return bad(400, "AI rate limit hit. Try again shortly.");
+    if (aiRes.status === 402) return bad(400, "AI credits exhausted. Add funds in workspace settings.");
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error("AI gateway error", aiRes.status, t);
-      return bad(502, "AI gateway error");
+      return bad(400, "AI gateway error");
     }
     const aiJson = await aiRes.json();
     let draftText: string = aiJson?.choices?.[0]?.message?.content?.trim() ?? "";
@@ -182,25 +188,31 @@ Deno.serve(async (req) => {
     draftText = draftText.replace(/^["“”']+|["“”']+$/g, "").trim();
 
     if (!draftText || draftText.toUpperCase() === "SKIP") {
-      return bad(422, "Model declined to draft (sensitive or low-signal topic).");
+      return bad(400, "Model declined to draft (sensitive or low-signal topic).");
     }
 
     // ---- insert draft (RLS will check editor role) ----
+    const payload = {
+      workspace_id: workspaceId,
+      tweet_id: tweetId,
+      content: draftText,
+      status: "pending",
+    };
+    if (!payload.tweet_id || !payload.workspace_id || !payload.content) {
+      return bad(400, "tweet_id, workspace_id, and content are required");
+    }
+    console.log("INSERT PAYLOAD:", payload);
+
     const { data: inserted, error: insertErr } = await supabase
       .from("drafts")
-      .insert({
-        workspace_id: workspaceId,
-        tweet_id: tweetId,
-        account_id: resolvedAccountId,
-        action_type: actionType,
-        draft_text: draftText,
-        status: "pending",
-        created_by: userId,
-      })
-      .select("id, draft_text, action_type, status")
+      .insert(payload)
+      .select("id, content, status")
       .single();
 
-    if (insertErr) return bad(500, insertErr.message);
+    if (insertErr) {
+      console.error("Draft insert failed", insertErr);
+      return bad(400, insertErr.message);
+    }
 
     // best-effort audit log
     await supabase.from("audit_logs").insert({
@@ -209,8 +221,8 @@ Deno.serve(async (req) => {
       event_type: "draft.generated",
       entity_type: "draft",
       entity_id: inserted.id,
-      summary: `AI drafted a ${actionType} for @${tweet.source_handle}`,
-      metadata: { tweet_id: tweetId, persona_id: personaId, model: "google/gemini-2.5-flash" },
+      summary: `AI drafted content for @${tweet.source_handle}`,
+      metadata: { tweet_id: tweetId, persona_id: personaId, action_type: actionType, model: "google/gemini-2.5-flash" },
     });
 
     return new Response(JSON.stringify({ draft: inserted }), {
@@ -218,7 +230,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
   } catch (e) {
-    console.error("generate-draft error", e);
-    return bad(500, e instanceof Error ? e.message : "Unknown error");
+    console.error("EDGE ERROR:", e);
+    return bad(400, e instanceof Error ? e.message : "Unknown error");
   }
 });
