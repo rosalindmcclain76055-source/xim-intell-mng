@@ -131,7 +131,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-muted-foreground text-sm" dir="ltr">
-                        @{tweet.author_handle}
+                        @{tweet.source_handle}
                       </span>
                       {tweet.classifications?.[0] && (
                         <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-mono">

@@ -1,21 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { getTweetsWithClassification } from "@/services/tweets.service";
-import type { Database } from "@/integrations/supabase/types";
+import { getTweetsWithClassification, type TweetWithClassification } from "@/services/tweets.service";
 import { ingestMockTweets } from "@/services/ingestion.service";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
-type TweetClassification = Pick<
-  Database["public"]["Tables"]["classifications"]["Row"],
-  "topic_score" | "source_score" | "actionability_score" | "risk_score" | "final_score" | "final_decision"
->;
-
-export interface TweetItem {
-  id: string;
-  text: string;
-  author_handle: string;
-  created_at: string;
-  classifications: TweetClassification[];
-}
+export type TweetItem = TweetWithClassification;
 
 export function useTweets() {
   const { currentWorkspace } = useWorkspace();
