@@ -3,13 +3,14 @@ import { TopBar } from "@/components/app/TopBar";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Inbox, Radar, GitBranch, Send, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { faIR, enUS } from "date-fns/locale";
-import { ScoreBar } from "@/components/app/ScoreBar";
-import { useTranslation, Trans } from "react-i18next";
+import { useTranslation } from "react-i18next";
+import { useTweets } from "@/hooks/useTweets";
+import { toast } from "sonner";
 
 interface Stats {
   ingestedToday: number;
@@ -22,9 +23,11 @@ export default function Dashboard() {
   const { currentWorkspace } = useWorkspace();
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "fa" ? faIR : enUS;
+  const { tweets, loading, ingest } = useTweets();
+
   const [stats, setStats] = useState<Stats>({ ingestedToday: 0, relevant: 0, pendingDrafts: 0, publishedToday: 0 });
-  const [recent, setRecent] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
+  const [ingesting, setIngesting] = useState(false);
 
   useEffect(() => {
     if (!currentWorkspace) return;
@@ -34,23 +37,12 @@ export default function Dashboard() {
     const todayIso = todayStart.toISOString();
 
     (async () => {
-      const [ing, rel, pen, pub, recentRows, auditRows] = await Promise.all([
+      const [ing, rel, pen, pub, auditRows] = await Promise.all([
         supabase.from("tweets").select("id", { count: "exact", head: true }).eq("workspace_id", wsId).gte("ingested_at", todayIso),
         supabase.from("classifications").select("id", { count: "exact", head: true }).eq("workspace_id", wsId).neq("final_decision", "ignore"),
         supabase.from("drafts").select("id", { count: "exact", head: true }).eq("workspace_id", wsId).eq("status", "pending"),
         supabase.from("drafts").select("id", { count: "exact", head: true }).eq("workspace_id", wsId).eq("status", "published"),
-        supabase
-          .from("classifications")
-          .select("*, tweet:tweets(text, source_handle, source_display_name, ingested_at)")
-          .eq("workspace_id", wsId)
-          .order("created_at", { ascending: false })
-          .limit(6),
-        supabase
-          .from("audit_logs")
-          .select("*")
-          .eq("workspace_id", wsId)
-          .order("created_at", { ascending: false })
-          .limit(6),
+        supabase.from("audit_logs").select("*").eq("workspace_id", wsId).order("created_at", { ascending: false }).limit(6),
       ]);
 
       setStats({
@@ -59,10 +51,9 @@ export default function Dashboard() {
         pendingDrafts: pen.count ?? 0,
         publishedToday: pub.count ?? 0,
       });
-      setRecent(recentRows.data ?? []);
       setAudits(auditRows.data ?? []);
     })();
-  }, [currentWorkspace]);
+  }, [currentWorkspace, tweets.length]);
 
   const cards = [
     { label: t("dashboard.ingestedToday"), value: stats.ingestedToday, icon: Radar, color: "text-primary" },
@@ -73,20 +64,38 @@ export default function Dashboard() {
 
   return (
     <>
-      <TopBar title={t("nav.dashboard")} subtitle={currentWorkspace?.name} />
+      <TopBar
+        title={t("nav.dashboard")}
+        subtitle={currentWorkspace?.name}
+        actions={
+          <Button
+            size="sm"
+            onClick={async () => {
+              setIngesting(true);
+              try {
+                await ingest();
+                toast.success("Tweets ingested");
+              } catch (e: any) {
+                toast.error(e?.message ?? "Ingestion failed");
+              } finally {
+                setIngesting(false);
+              }
+            }}
+            disabled={ingesting || !currentWorkspace}
+            className="gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {ingesting ? "Ingesting…" : "Ingest Tweets"}
+          </Button>
+        }
+      />
       <div className="p-6 space-y-6 animate-fade-in">
-        {stats.ingestedToday === 0 && stats.pendingDrafts === 0 && (
+        {!loading && tweets.length === 0 && (
           <Card className="p-5 border-dashed bg-surface-2 flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-primary mt-0.5" />
             <div className="flex-1">
               <h3 className="font-display font-semibold">{t("dashboard.emptyTitle")}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                <Trans
-                  i18nKey="dashboard.emptyDesc"
-                  values={{ seed: t("topbar.seedDemo") }}
-                  components={{ 1: <span className="font-mono text-foreground" /> }}
-                />
-              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">No tweets found yet. Click "Ingest Tweets" to load your pipeline data.</p>
             </div>
           </Card>
         )}
@@ -108,34 +117,25 @@ export default function Dashboard() {
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <div>
                 <h3 className="font-display font-semibold">{t("dashboard.recentTitle")}</h3>
-                <p className="text-xs text-muted-foreground">{t("dashboard.recentDesc")}</p>
+                <p className="text-xs text-muted-foreground">Latest tweets from Supabase</p>
               </div>
               <Link to="/app/queue" className="text-xs text-primary hover:underline flex items-center gap-1">
                 {t("common.viewQueue")} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
               </Link>
             </div>
             <div className="divide-y divide-border">
-              {recent.length === 0 && (
-                <div className="p-8 text-center text-sm text-muted-foreground">{t("dashboard.noClassifications")}</div>
-              )}
-              {recent.map((c) => (
-                <div key={c.id} className="px-5 py-4 hover:bg-surface-2 transition-colors">
+              {!loading && tweets.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No tweets yet.</div>}
+              {tweets.slice(0, 6).map((tweet) => (
+                <div key={tweet.id} className="px-5 py-4 hover:bg-surface-2 transition-colors">
                   <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-mono text-muted-foreground" dir="ltr">@{c.tweet?.source_handle}</span>
-                      <DecisionBadge decision={c.final_decision} />
-                    </div>
+                    <span className="font-mono text-muted-foreground text-sm" dir="ltr">
+                      @{tweet.author_handle}
+                    </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {c.tweet?.ingested_at && formatDistanceToNow(new Date(c.tweet.ingested_at), { addSuffix: true, locale: dateLocale })}
+                      {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true, locale: dateLocale })}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed line-clamp-2 mb-2">{c.tweet?.text}</p>
-                  <div className="grid grid-cols-4 gap-2 text-[10px]">
-                    <ScoreBar label={t("scores.topic")} value={c.topic_score} />
-                    <ScoreBar label={t("scores.source")} value={c.source_score} />
-                    <ScoreBar label={t("scores.action")} value={c.actionability_score} />
-                    <ScoreBar label={t("scores.risk")} value={c.risk_score} variant="risk" />
-                  </div>
+                  <p className="text-sm leading-relaxed line-clamp-2">{tweet.text}</p>
                 </div>
               ))}
             </div>
@@ -149,13 +149,13 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="divide-y divide-border">
-              {audits.length === 0 && (
-                <div className="p-8 text-center text-sm text-muted-foreground">{t("dashboard.noEvents")}</div>
-              )}
+              {audits.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">{t("dashboard.noEvents")}</div>}
               {audits.map((a) => (
                 <div key={a.id} className="px-5 py-3">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-mono text-[11px] text-primary" dir="ltr">{a.event_type}</span>
+                    <span className="font-mono text-[11px] text-primary" dir="ltr">
+                      {a.event_type}
+                    </span>
                     <span className="text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: dateLocale })}
                     </span>
@@ -168,21 +168,5 @@ export default function Dashboard() {
         </div>
       </div>
     </>
-  );
-}
-
-function DecisionBadge({ decision }: { decision: string }) {
-  const { t } = useTranslation();
-  const classes: Record<string, string> = {
-    ignore: "bg-muted text-muted-foreground",
-    review: "bg-warning/15 text-warning border-warning/30",
-    draft_reply: "bg-primary/15 text-primary border-primary/30",
-    draft_quote: "bg-accent/15 text-accent border-accent/30",
-    draft_post: "bg-success/15 text-success border-success/30",
-  };
-  return (
-    <Badge variant="outline" className={`text-[10px] font-mono uppercase tracking-wider ${classes[decision] ?? ""}`}>
-      {t(`decisions.${decision}`, { defaultValue: decision })}
-    </Badge>
   );
 }
