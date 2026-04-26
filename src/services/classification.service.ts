@@ -1,16 +1,11 @@
 import { supabase } from "@/lib/supabaseClient";
 import { computeScore, decideAction } from "@/lib/classifier";
 import type { Database } from "@/integrations/supabase/types";
+import type { Tweet } from "@/types/tweet";
 
 type ClassificationRow = Database["public"]["Tables"]["classifications"]["Row"];
 
-type TweetForClassification = {
-  id: string;
-  workspace_id: string;
-  text: string;
-  source_handle?: string | null;
-  hashtags?: string[] | null;
-};
+type TweetForClassification = Tweet;
 
 function normalize(text: string): string {
   return text.toLowerCase();
@@ -57,6 +52,7 @@ function computeRiskScore(tweet: TweetForClassification): number {
 
 export async function classifyTweet(tweet: TweetForClassification): Promise<ClassificationRow> {
   console.log("CLASSIFY INPUT →", tweet);
+  console.log("TWEET KEYS:", Object.keys(tweet));
   const topic = computeTopicScore(tweet);
   const source = computeSourceScore(tweet);
   const actionability = computeActionabilityScore(tweet);
@@ -70,10 +66,10 @@ export async function classifyTweet(tweet: TweetForClassification): Promise<Clas
   });
 
   const decision = decideAction(finalScore);
-console.log("UPSERT PAYLOAD →", {
-  tweet_id: tweet.id,
-  workspace_id: tweet.workspace_id,
-});
+  console.log("UPSERT PAYLOAD →", {
+    tweet_id: tweet.id,
+    workspace_id: tweet.workspace_id,
+  });
   const { data, error } = await supabase
     .from("classifications")
     .upsert(

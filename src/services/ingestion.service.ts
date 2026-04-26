@@ -16,10 +16,8 @@ const sampleTweets = [
 ];
 
 export async function ingestMockTweets(workspaceId: string) {
-  const now = Date.now();
-  const rows = sampleTweets.map((tweet, index) => ({
+  const rows = sampleTweets.map((tweet) => ({
     workspace_id: workspaceId,
-    tweet_id: `ingest_${now}_${index}`,
     text: tweet.text,
     source_handle: tweet.author_handle,
     source_display_name: tweet.author_handle,

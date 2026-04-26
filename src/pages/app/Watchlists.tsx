@@ -14,15 +14,22 @@ import { faIR, enUS } from "date-fns/locale";
 import { GenerateDraftButton } from "@/components/app/GenerateDraftButton";
 import { ClassifyButton } from "@/components/app/ClassifyButton";
 import { useTranslation } from "react-i18next";
+import type { Tweet } from "@/types/tweet";
 
 type ClassificationRow = Database["public"]["Tables"]["classifications"]["Row"];
+
+type WatchlistTweet = Tweet & {
+  source_display_name?: string | null;
+  ingested_at: string;
+  classifications?: ClassificationRow[];
+};
 
 export default function Watchlists() {
   const { currentWorkspace, role } = useWorkspace();
   const canEdit = role === "admin" || role === "editor";
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "fa" ? faIR : enUS;
-  const [tweets, setTweets] = useState<any[]>([]);
+  const [tweets, setTweets] = useState<WatchlistTweet[]>([]);
   const [search, setSearch] = useState("");
   const [decision, setDecision] = useState<string>("all");
 

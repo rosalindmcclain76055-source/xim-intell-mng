@@ -5,19 +5,12 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { classifyTweet } from "@/services/classification.service";
 import type { Database } from "@/integrations/supabase/types";
+import type { Tweet } from "@/types/tweet";
 
 type ClassificationRow = Database["public"]["Tables"]["classifications"]["Row"];
 
-type TweetInput = {
-  id: string;
-  workspace_id: string;
-  text: string;
-  source_handle?: string | null;
-  hashtags?: string[] | null;
-};
-
 interface ClassifyButtonProps {
-  tweet: TweetInput;
+  tweet: Tweet;
   onClassified?: (classification: ClassificationRow) => void;
   size?: "sm" | "default";
 }
