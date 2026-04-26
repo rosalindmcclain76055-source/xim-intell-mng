@@ -3,14 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_ANON_KEY =
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  Deno.env.get("SUPABASE_ANON_KEY") ??
+  "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(status: number, payload: Record<string, unknown>) {
   return new Response(JSON.stringify(payload), {
@@ -32,39 +36,42 @@ async function generateContent(sourceTweet: string): Promise<string> {
   }
 
   try {
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write short, high-signal posts for X (Twitter). Return only the final draft text, under 270 characters.",
-          },
-          {
-            role: "user",
-            content: `Create a concise reply draft for this tweet:\n\n${source}`,
-          },
-        ],
-      }),
-    });
+    const aiRes = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You write short, high-signal posts for X. Return only final text under 270 chars.",
+            },
+            {
+              role: "user",
+              content: `Create a concise reply draft:\n\n${source}`,
+            },
+          ],
+        }),
+      }
+    );
 
     if (!aiRes.ok) {
-      const t = await aiRes.text();
-      console.error("AI ERROR:", aiRes.status, t);
+      console.error("AI ERROR:", await aiRes.text());
       return "";
     }
 
     const aiJson = await aiRes.json();
-    const modelOutput = aiJson?.choices?.[0]?.message?.content;
-    if (!isNonEmptyString(modelOutput)) return "";
+    const output = aiJson?.choices?.[0]?.message?.content;
 
-    return modelOutput.trim().replace(/^['"“”]+|['"“”]+$/g, "") || "Draft unavailable";
+    return isNonEmptyString(output)
+      ? output.trim().replace(/^['"“”]+|['"“”]+$/g, "")
+      : "";
   } catch (err) {
     console.error("AI ERROR:", err);
     return "";
@@ -77,53 +84,31 @@ Deno.serve(async (req) => {
 
   try {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error("Supabase environment is not configured");
+      throw new Error("Supabase not configured");
     }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing Authorization header");
-    }
+    if (!authHeader) throw new Error("Missing Authorization");
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      throw new Error("Invalid JSON body");
-    }
-
+    const body = await req.json();
     console.log("GENERATE INPUT:", body);
 
-    if (!body || typeof body !== "object") {
-      throw new Error("Request body is required");
-    }
+    const tweetId = body?.tweet_id;
+    const workspaceId = body?.workspace_id;
 
-    const payload = body as Record<string, unknown>;
-    const tweetId = payload.tweet_id;
-    const workspaceId = payload.workspace_id;
-
-    if (!isNonEmptyString(tweetId)) {
-      throw new Error("tweet_id is required and must be a string");
-    }
-    if (!isNonEmptyString(workspaceId)) {
-      throw new Error("workspace_id is required and must be a string");
-    }
-    if (!UUID_RE.test(tweetId)) {
-      throw new Error("tweet_id must be a valid UUID");
-    }
-    if (!UUID_RE.test(workspaceId)) {
-      throw new Error("workspace_id must be a valid UUID");
-    }
+    if (!isNonEmptyString(tweetId)) throw new Error("tweet_id required");
+    if (!isNonEmptyString(workspaceId)) throw new Error("workspace_id required");
+    if (!UUID_RE.test(tweetId)) throw new Error("Invalid tweet_id");
+    if (!UUID_RE.test(workspaceId)) throw new Error("Invalid workspace_id");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData.user) {
-      throw new Error("Invalid session");
-    }
+    if (userErr || !userData.user) throw new Error("Invalid session");
 
+    // ✅ Fetch tweet
     const { data: tweet, error: tweetErr } = await supabase
       .from("tweets")
       .select("id, workspace_id, text")
@@ -131,38 +116,37 @@ Deno.serve(async (req) => {
       .eq("workspace_id", workspaceId)
       .maybeSingle();
 
-    if (tweetErr) {
-      console.error("DB ERROR:", tweetErr);
-      throw new Error(`Failed to load tweet: ${tweetErr.message}`);
-    }
+    if (tweetErr) throw new Error(tweetErr.message);
+    if (!tweet) throw new Error("Tweet not found");
 
-    if (!tweet) {
-      throw new Error("Tweet not found for the provided workspace_id");
-    }
+    // ✅ FIXED RPC PARAMS HERE
+    const { data: canEdit, error: roleError } = await supabase.rpc(
+      "can_edit_workspace",
+      {
+        p_workspace_id: workspaceId,
+        p_user_id: userData.user.id,
+      }
+    );
 
-    const { data: canEdit, error: roleError } = await supabase.rpc("can_edit_workspace", {
-      _workspace_id: workspaceId,
-      _user_id: userData.user.id,
-    });
-    if (roleError) {
-      console.error("DB ERROR:", roleError);
-      throw new Error(`Failed role check: ${roleError.message}`);
-    }
-    if (!canEdit) {
-      throw new Error("You do not have permission to create drafts in this workspace");
-    }
+    if (roleError) throw new Error(roleError.message);
+    if (!canEdit) throw new Error("No permission");
 
-    const generatedText = await generateContent(tweet.text ?? "");
-    console.log("AI OUTPUT:", generatedText);
+    // ✅ Generate content
+    const aiText = await generateContent(tweet.text ?? "");
+    console.log("AI OUTPUT:", aiText);
 
-    const tweetPreview = typeof tweet.text === "string" ? tweet.text.trim() : "";
-    const fallback = `Interesting point on "${tweetPreview.slice(0, 80)}..." — worth discussing.`;
-    const content = isNonEmptyString(generatedText) ? generatedText : fallback;
+    const fallback = `Interesting point on "${(tweet.text ?? "").slice(
+      0,
+      80
+    )}..."`;
 
+    const content = isNonEmptyString(aiText) ? aiText : fallback;
+
+    // ✅ IMPORTANT: match your DB schema
     const row = {
       workspace_id: workspaceId,
       tweet_id: tweetId,
-      content,
+      draft_text: content, // 🔥 CHANGE HERE (not "content")
       status: "pending",
     };
 
@@ -179,10 +163,11 @@ Deno.serve(async (req) => {
       throw new Error(error.message);
     }
 
-    return json(200, data as Record<string, unknown>);
+    return json(200, data);
   } catch (err) {
     console.error("EDGE ERROR:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return json(400, { error: message });
+    return json(400, {
+      error: err instanceof Error ? err.message : "Unknown error",
+    });
   }
 });
