@@ -5,6 +5,7 @@ import { Sparkles, Loader2, ChevronDown, MessageSquare, Quote, Send } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type ActionType = "reply" | "quote" | "post";
 
@@ -15,30 +16,48 @@ interface GenerateDraftButtonProps {
   size?: "sm" | "default";
 }
 
-export function GenerateDraftButton({ tweetId, accountId, onGenerated, size = "sm" }: GenerateDraftButtonProps) {
+export function GenerateDraftButton({ tweetId, onGenerated, size = "sm" }: GenerateDraftButtonProps) {
   const [loading, setLoading] = useState<ActionType | null>(null);
   const { t } = useTranslation();
+  const { currentWorkspace } = useWorkspace();
 
   const generate = async (action: ActionType) => {
+    if (!currentWorkspace?.id) {
+      toast.error("Workspace is required before generating a draft");
+      return;
+    }
+
     setLoading(action);
     try {
       const { data, error } = await supabase.functions.invoke("generate-draft", {
-        body: { tweet_id: tweetId, action_type: action, account_id: accountId ?? null },
+        body: {
+          tweet_id: tweetId,
+          workspace_id: currentWorkspace.id,
+        },
       });
+
       if (error) {
+        console.error("FUNCTION ERROR:", error);
         const ctx: any = (error as any).context;
         let msg = error.message;
         try {
           const body = ctx && typeof ctx.body === "string" ? JSON.parse(ctx.body) : null;
           if (body?.error) msg = body.error;
-        } catch { /* ignore */ }
+        } catch {
+          // no-op
+        }
         toast.error(msg);
         return;
       }
-      if (data?.draft) {
+
+      if (data?.id) {
         toast.success(t("draftBtn.createdToast"));
         onGenerated?.();
+        return;
       }
+
+      console.error("INVALID RESPONSE:", data);
+      toast.error(t("draftBtn.failed"));
     } catch (e: any) {
       toast.error(e?.message ?? t("draftBtn.failed"));
     } finally {
