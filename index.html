@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript">
+      // Companion to public/404.html — restores the deep-linked URL on GitHub Pages.
+      // https://github.com/rafgraph/spa-github-pages
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function (s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      }(window.location));
+    </script>
     <!-- TODO: Set the document title to the name of your application -->
     <title>X Intelligence Manager (XIM)</title>
     <meta name="description" content="AI Social Assistant manages X/Twitter accounts with AI-powered monitoring, content drafting, and controlled publishing.">
