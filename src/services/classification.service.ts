@@ -90,7 +90,10 @@ export async function classifyTweet(tweet: TweetForClassification): Promise<Clas
     .select()
     .single();
 
-  if (error) throw error;
-
+if (error) {
+  console.error("SUPABASE FULL ERROR →", error);
+  alert(JSON.stringify(error, null, 2));
+  throw error;
+}
   return data;
 }
