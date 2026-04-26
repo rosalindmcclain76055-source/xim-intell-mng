@@ -1,7 +1,7 @@
 // Classify a tweet using Lovable AI (LLM-only, no embeddings).
 // Auth: editor/admin in the tweet's workspace.
 // Input:  { tweet_id: uuid }
-// Output: { classification: { topic_score, source_score, actionability_score, risk_score, final_decision, reasoning, matched_keywords } }
+// Output: { classification: { topic_score, source_score, actionability_score, risk_score, final_score, final_decision, reasoning, matched_keywords } }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -18,7 +18,7 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const MODEL = "google/gemini-2.5-flash";
 const MODEL_VERSION = `${MODEL}@v1`;
 
-type Decision = "ignore" | "review" | "draft_reply" | "draft_quote" | "draft_post";
+type Decision = "ignore" | "review" | "draft";
 
 function bad(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), {
@@ -121,9 +121,7 @@ SCALES (0-100):
 DECISION RULES (apply in order):
 1. risk_score >= 60 OR topic_score < 30  -> "ignore"
 2. risk_score >= 40                       -> "review"
-3. actionability_score >= 70 AND tweet ends with a question or asks for opinions -> "draft_reply"
-4. actionability_score >= 60 AND topic_score >= 60 -> "draft_quote"
-5. topic_score >= 70 AND actionability_score < 60  -> "draft_post"
+3. actionability_score >= 60 AND topic_score >= 60 -> "draft"
 6. otherwise -> "review"
 
 Return your answer ONLY via the provided tool call.`;
@@ -153,7 +151,7 @@ Score it and decide.`;
             source_score: { type: "integer", minimum: 0, maximum: 100 },
             actionability_score: { type: "integer", minimum: 0, maximum: 100 },
             risk_score: { type: "integer", minimum: 0, maximum: 100 },
-            final_decision: { type: "string", enum: ["ignore", "review", "draft_reply", "draft_quote", "draft_post"] },
+            final_decision: { type: "string", enum: ["ignore", "review", "draft"] },
             reasoning: { type: "string", description: "1-2 sentence justification, max 240 chars." },
             matched_keywords: { type: "array", items: { type: "string" }, description: "Keywords from the watched list that appear in or relate to the tweet." },
           },
@@ -197,9 +195,15 @@ Score it and decide.`;
       source_score: clamp(parsed.source_score),
       actionability_score: clamp(parsed.actionability_score),
       risk_score: clamp(parsed.risk_score),
-      final_decision: (["ignore", "review", "draft_reply", "draft_quote", "draft_post"].includes(parsed.final_decision)
+      final_decision: (["ignore", "review", "draft"].includes(parsed.final_decision)
         ? parsed.final_decision
         : "review") as Decision,
+      final_score: Math.max(0, Math.min(100, Math.round(
+        0.45 * clamp(parsed.topic_score) +
+        0.25 * clamp(parsed.source_score) +
+        0.3 * clamp(parsed.actionability_score) -
+        0.5 * clamp(parsed.risk_score)
+      ))),
       reasoning: typeof parsed.reasoning === "string" ? parsed.reasoning.slice(0, 500) : null,
       matched_keywords: Array.isArray(parsed.matched_keywords)
         ? parsed.matched_keywords.filter((k: any) => typeof k === "string").slice(0, 20)
@@ -211,7 +215,7 @@ Score it and decide.`;
     const { data: saved, error: upsertErr } = await supabase
       .from("classifications")
       .upsert(row, { onConflict: "tweet_id" })
-      .select("topic_score, source_score, actionability_score, risk_score, final_decision, reasoning, matched_keywords")
+      .select("topic_score, source_score, actionability_score, risk_score, final_score, final_decision, reasoning, matched_keywords")
       .single();
     if (upsertErr) return bad(500, upsertErr.message);
 
@@ -222,7 +226,7 @@ Score it and decide.`;
       entity_type: "tweet",
       entity_id: tweetId,
       summary: `Classified @${tweet.source_handle} → ${row.final_decision} (risk ${row.risk_score})`,
-      metadata: { model: MODEL_VERSION, scores: { topic: row.topic_score, source: row.source_score, actionability: row.actionability_score, risk: row.risk_score } },
+      metadata: { model: MODEL_VERSION, scores: { topic: row.topic_score, source: row.source_score, actionability: row.actionability_score, risk: row.risk_score, final: row.final_score } },
     });
 
     return new Response(JSON.stringify({ classification: saved }), {

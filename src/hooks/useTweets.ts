@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { getTweets } from "@/services/tweets.service";
+import { getTweetsWithClassification } from "@/services/tweets.service";
+import type { Database } from "@/integrations/supabase/types";
 import { ingestMockTweets } from "@/services/ingestion.service";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+
+type TweetClassification = Pick<
+  Database["public"]["Tables"]["classifications"]["Row"],
+  "topic_score" | "source_score" | "actionability_score" | "risk_score" | "final_score" | "final_decision"
+>;
 
 export interface TweetItem {
   id: string;
   text: string;
   author_handle: string;
   created_at: string;
+  classifications: TweetClassification[];
 }
 
 export function useTweets() {
@@ -23,7 +30,7 @@ export function useTweets() {
     }
 
     setLoading(true);
-    const data = await getTweets(currentWorkspace.id);
+    const data = await getTweetsWithClassification(currentWorkspace.id);
     setTweets(data);
     setLoading(false);
   }, [currentWorkspace]);

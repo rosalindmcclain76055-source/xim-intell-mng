@@ -4,6 +4,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Inbox, Radar, GitBranch, Send, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -128,14 +129,26 @@ export default function Dashboard() {
               {tweets.slice(0, 6).map((tweet) => (
                 <div key={tweet.id} className="px-5 py-4 hover:bg-surface-2 transition-colors">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-muted-foreground text-sm" dir="ltr">
-                      @{tweet.author_handle}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-muted-foreground text-sm" dir="ltr">
+                        @{tweet.author_handle}
+                      </span>
+                      {tweet.classifications?.[0] && (
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-mono">
+                          {tweet.classifications[0].final_decision}
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true, locale: dateLocale })}
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed line-clamp-2">{tweet.text}</p>
+                  {tweet.classifications?.[0] && (
+                    <div className="mt-1 text-[11px] text-muted-foreground font-mono">
+                      score: {tweet.classifications[0].final_score.toFixed(2)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

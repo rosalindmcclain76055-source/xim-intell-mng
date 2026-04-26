@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { TopBar } from "@/components/app/TopBar";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { faIR, enUS } from "date-fns/locale";
 import { GenerateDraftButton } from "@/components/app/GenerateDraftButton";
 import { ClassifyButton } from "@/components/app/ClassifyButton";
 import { useTranslation } from "react-i18next";
+
+type ClassificationRow = Database["public"]["Tables"]["classifications"]["Row"];
 
 export default function Watchlists() {
   const { currentWorkspace, role } = useWorkspace();
@@ -61,9 +64,7 @@ export default function Watchlists() {
           <Tabs value={decision} onValueChange={setDecision}>
             <TabsList>
               <TabsTrigger value="all">{t("common.all")}</TabsTrigger>
-              <TabsTrigger value="draft_reply">{t("watchlists.tabs.replies")}</TabsTrigger>
-              <TabsTrigger value="draft_quote">{t("watchlists.tabs.quotes")}</TabsTrigger>
-              <TabsTrigger value="draft_post">{t("watchlists.tabs.posts")}</TabsTrigger>
+              <TabsTrigger value="draft">{t("decisions.draft")}</TabsTrigger>
               <TabsTrigger value="review">{t("watchlists.tabs.review")}</TabsTrigger>
               <TabsTrigger value="ignore">{t("watchlists.tabs.ignored")}</TabsTrigger>
             </TabsList>
@@ -109,7 +110,16 @@ export default function Watchlists() {
                       </div>
                       {canEdit && (
                         <div className="flex items-center gap-2">
-                          <ClassifyButton tweetId={tw.id} onClassified={load} />
+                          <ClassifyButton
+                            tweet={tw}
+                            onClassified={(classification: ClassificationRow) => {
+                              setTweets((prev) =>
+                                prev.map((item) =>
+                                  item.id === tw.id ? { ...item, classifications: [classification] } : item,
+                                ),
+                              );
+                            }}
+                          />
                           <GenerateDraftButton tweetId={tw.id} onGenerated={load} />
                         </div>
                       )}
@@ -130,9 +140,7 @@ function DecisionBadge({ decision }: { decision: string }) {
   const classes: Record<string, string> = {
     ignore: "bg-muted text-muted-foreground",
     review: "bg-warning/15 text-warning border-warning/30",
-    draft_reply: "bg-primary/15 text-primary border-primary/30",
-    draft_quote: "bg-accent/15 text-accent border-accent/30",
-    draft_post: "bg-success/15 text-success border-success/30",
+    draft: "bg-primary/15 text-primary border-primary/30",
   };
   return (
     <Badge variant="outline" className={`text-[10px] font-mono uppercase tracking-wider ${classes[decision] ?? ""}`}>

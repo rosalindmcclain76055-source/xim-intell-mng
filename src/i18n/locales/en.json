@@ -92,12 +92,30 @@
     "footer": "© XIM · v0.1",
     "builtOn": "Built on Lovable Cloud",
     "features": {
-      "sources": { "title": "Source watchlists", "desc": "Track curated accounts, keywords, concepts, and X-style queries with per-source priority." },
-      "classifier": { "title": "Hybrid classifier", "desc": "Topic + source + actionability − risk. Only high-signal tweets become drafts." },
-      "personas": { "title": "Persona drafting", "desc": "Each connected account writes in its own tone, expertise, and reply style." },
-      "queue": { "title": "Approval queue", "desc": "Approve, edit, schedule, or reject. Nothing gets posted without intent." },
-      "safety": { "title": "Safety guardrails", "desc": "No mass replies. No unsolicited mentions. Auto-reply is opt-in only." },
-      "audit": { "title": "Full audit log", "desc": "Every ingestion, classification, draft, and publish is traceable." }
+      "sources": {
+        "title": "Source watchlists",
+        "desc": "Track curated accounts, keywords, concepts, and X-style queries with per-source priority."
+      },
+      "classifier": {
+        "title": "Hybrid classifier",
+        "desc": "Topic + source + actionability − risk. Only high-signal tweets become drafts."
+      },
+      "personas": {
+        "title": "Persona drafting",
+        "desc": "Each connected account writes in its own tone, expertise, and reply style."
+      },
+      "queue": {
+        "title": "Approval queue",
+        "desc": "Approve, edit, schedule, or reject. Nothing gets posted without intent."
+      },
+      "safety": {
+        "title": "Safety guardrails",
+        "desc": "No mass replies. No unsolicited mentions. Auto-reply is opt-in only."
+      },
+      "audit": {
+        "title": "Full audit log",
+        "desc": "Every ingestion, classification, draft, and publish is traceable."
+      }
     }
   },
   "dashboard": {
@@ -116,9 +134,7 @@
   "decisions": {
     "ignore": "Ignore",
     "review": "Review",
-    "draft_reply": "Draft reply",
-    "draft_quote": "Draft quote",
-    "draft_post": "Draft post"
+    "draft": "Draft reply"
   },
   "scores": {
     "topic": "Topic",
