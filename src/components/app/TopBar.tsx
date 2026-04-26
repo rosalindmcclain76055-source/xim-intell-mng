@@ -1,8 +1,12 @@
-import { Moon, Sun, LogOut, Sparkles } from "lucide-react";
+import { Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -10,8 +14,6 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { seedWorkspace } from "@/lib/seed";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -24,9 +26,8 @@ interface TopBarProps {
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { currentWorkspace, role, refresh } = useWorkspace();
+  const { currentWorkspace, role } = useWorkspace();
   const navigate = useNavigate();
-  const [seeding, setSeeding] = useState(false);
   const { t } = useTranslation();
 
   return (
@@ -44,28 +45,6 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               {role}
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={seeding}
-            onClick={async () => {
-              if (!currentWorkspace) return;
-              setSeeding(true);
-              try {
-                await seedWorkspace(currentWorkspace.id);
-                await refresh();
-                toast.success(t("topbar.seedSuccess"));
-              } catch (e: any) {
-                toast.error(e?.message ?? t("topbar.seedFailed"));
-              } finally {
-                setSeeding(false);
-              }
-            }}
-            className="hidden sm:inline-flex gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            {seeding ? t("topbar.seeding") : t("topbar.seedDemo")}
-          </Button>
           <LanguageSwitcher />
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("common.theme")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -77,9 +56,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground truncate">
-                {user?.email}
-              </DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground truncate">{user?.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/app/settings")}>{t("common.settings")}</DropdownMenuItem>
               <DropdownMenuItem
