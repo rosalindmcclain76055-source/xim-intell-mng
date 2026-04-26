@@ -56,6 +56,7 @@ function computeRiskScore(tweet: TweetForClassification): number {
 }
 
 export async function classifyTweet(tweet: TweetForClassification): Promise<ClassificationRow> {
+  console.log("CLASSIFY INPUT →", tweet);
   const topic = computeTopicScore(tweet);
   const source = computeSourceScore(tweet);
   const actionability = computeActionabilityScore(tweet);
@@ -69,7 +70,10 @@ export async function classifyTweet(tweet: TweetForClassification): Promise<Clas
   });
 
   const decision = decideAction(finalScore);
-
+console.log("UPSERT PAYLOAD →", {
+  tweet_id: tweet.id,
+  workspace_id: tweet.workspace_id,
+});
   const { data, error } = await supabase
     .from("classifications")
     .upsert(
